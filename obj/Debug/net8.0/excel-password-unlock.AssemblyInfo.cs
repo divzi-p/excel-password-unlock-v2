@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("excel-password-unlock")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+871039ff6aee9731509d77c4ef43b89ec11a5598")]
 [assembly: System.Reflection.AssemblyProductAttribute("excel-password-unlock")]
 [assembly: System.Reflection.AssemblyTitleAttribute("excel-password-unlock")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

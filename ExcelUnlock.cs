@@ -10,6 +10,7 @@ using Azure.Storage.Blobs;
 using System.Data;
 using ExcelDataReader;
 using Aspose.Cells;
+using System.Data.SqlClient;
 //Microsoft.Sharepoint.Client.Online.CSOM
 namespace excelapi.logic
 {
@@ -60,6 +61,78 @@ public async Task<string> ReadXLSBFileFromBlob(string storageConnectionString, s
     string json = JsonSerializer.Serialize(rows);
 
     return json;
+}
+
+public async Task<string> ReadXLSBFiletoSQL(string storageConnectionString, string blobName, string excelPassword)
+{
+    // Create a BlobServiceClient object
+    BlobServiceClient blobServiceClient = new BlobServiceClient(storageConnectionString);
+
+    // Get the blob container client
+    BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient("test1");
+
+    // Get the blob client
+    BlobClient blobClient = containerClient.GetBlobClient(blobName);
+
+    // Download the blob to a MemoryStream
+    MemoryStream memoryStream = new MemoryStream();
+    Console.WriteLine("Memory stream is read" );
+
+  
+    await blobClient.DownloadToAsync(memoryStream);
+
+/// Load the XLSB file
+   LoadOptions loadOptions = new LoadOptions(LoadFormat.Xlsb);
+    loadOptions.Password = excelPassword;
+    Workbook workbook = new Workbook(memoryStream, loadOptions);
+    Worksheet worksheet = workbook.Worksheets[0];
+
+    bool hasHeader = true; // adjust it accordingly
+    List<Dictionary<string, string>> rows = new List<Dictionary<string, string>>();
+    var headerRow = worksheet.Cells.GetRow(0);
+   // var startRow = hasHeader ? 1 : 0;
+
+    DataTable dt = new DataTable();
+    
+    // Assuming the first row of the worksheet contains the column names
+    for (int colIndex = 0; colIndex <= worksheet.Cells.MaxDataColumn; colIndex++)
+    {
+        string header = worksheet.Cells[0, colIndex].StringValue;
+        dt.Columns.Add(header);
+    }
+int pageSize = 5000;
+
+for (int pageNum = 0; pageNum * pageSize <= worksheet.Cells.MaxDataRow; pageNum++)
+{
+    int startRow = pageNum * pageSize + 1;
+    int endRow = Math.Min((pageNum + 1) * pageSize, worksheet.Cells.MaxDataRow);
+    // Add rows to the DataTable
+    for (var rowNum = startRow; rowNum <= endRow; rowNum++)
+    {
+        var row = worksheet.Cells.GetRow(rowNum);
+        DataRow dataRow = dt.NewRow();
+        for (int colIndex = 0; colIndex <= worksheet.Cells.MaxDataColumn; colIndex++)
+        {
+            dataRow[colIndex] = row.GetCellOrNull(colIndex)?.StringValue ?? string.Empty;
+        }
+        dt.Rows.Add(dataRow);
+    }
+
+    // Insert the data into SQL Azure.
+
+    using (SqlConnection conn = new SqlConnection("<sqlconnection"))
+    {
+        conn.Open();
+        using (SqlBulkCopy sbc = new SqlBulkCopy(conn))
+        {
+            sbc.DestinationTableName = "SalesBonus";
+            sbc.WriteToServer(dt);
+        }
+    }
+    dt.Clear();
+}  
+    return "Ok";
+ 
 }
 
 public async Task<string> ReadProtectedExcelFileFromBlob(string storageConnectionString,string blobContainerName, string blobName, string excelPassword)
